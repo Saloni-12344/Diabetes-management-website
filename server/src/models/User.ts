@@ -5,13 +5,14 @@ const userSchema = new Schema(
     name: { type: String, required: true, trim: true },
     email: { type: String, required: true, unique: true, lowercase: true, trim: true },
     passwordHash: { type: String, required: true },
+    role: { type: String, enum: ['owner', 'viewer'], required: true, default: 'owner' },
     diabetesType: {
       type: String,
       enum: ['type1', 'type2', 'gestational', 'other'],
       default: 'type1',
     },
-    targetGlucoseMin: { type: Number, default: 80 },
-    targetGlucoseMax: { type: Number, default: 140 },
+    targetGlucoseMin: { type: Number, default: 70 },
+    targetGlucoseMax: { type: Number, default: 180 }
   },
   { timestamps: true },
 );

@@ -18,3 +18,19 @@ export function requireAuth(req: Request, res: Response, next: NextFunction): vo
     res.status(401).json({ message: 'Invalid or expired token' });
   }
 }
+
+export function requireRole(...roles: Array<'owner' | 'viewer'>) {
+  return (req: Request, res: Response, next: NextFunction): void => {
+    if (!req.auth) {
+      res.status(401).json({ message: 'Unauthorized' });
+      return;
+    }
+
+    if (!roles.includes(req.auth.role)) {
+      res.status(403).json({ message: 'Forbidden' });
+      return;
+    }
+
+    next();
+  };
+}

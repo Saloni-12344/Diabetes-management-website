@@ -3,6 +3,7 @@ import jwt, { type SignOptions } from 'jsonwebtoken';
 export type AuthTokenPayload = {
   userId: string;
   email: string;
+  role: 'owner' | 'viewer';
 };
 
 function getJwtSecret(): string {
@@ -25,8 +26,14 @@ export function verifyAuthToken(token: string): AuthTokenPayload {
     throw new Error('Invalid token payload');
   }
 
+  const role = String((decoded as Record<string, unknown>).role);
+  if (role !== 'owner' && role !== 'viewer') {
+    throw new Error('Invalid token role');
+  }
+
   return {
-    userId: String(decoded.userId),
-    email: String(decoded.email),
+    userId: String((decoded as Record<string, unknown>).userId),
+    email: String((decoded as Record<string, unknown>).email),
+    role,
   };
 }
