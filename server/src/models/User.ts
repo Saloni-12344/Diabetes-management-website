@@ -12,7 +12,13 @@ const userSchema = new Schema(
       default: 'type1',
     },
     targetGlucoseMin: { type: Number, default: 70 },
-    targetGlucoseMax: { type: Number, default: 180 }
+    targetGlucoseMax: { type: Number, default: 180 },
+    doctorSettings: {
+      icr: { type: Number, default: 10 },
+      isf: { type: Number, default: 50 },
+      targetGlucose: { type: Number, default: 110 },
+      maxDosePerMeal: { type: Number, default: 15 },
+    },
   },
   { timestamps: true },
 );
