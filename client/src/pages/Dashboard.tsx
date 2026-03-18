@@ -22,7 +22,7 @@ const COLORS = {
 };
 
 const MOCK_OWNER = {
-  name: 'Rohan',
+  name: 'Shaurya',
   role: 'owner',
   lastGlucose: 142,
   lastGlucoseTime: '2h ago',
@@ -47,13 +47,13 @@ const MOCK_OWNER = {
 const MOCK_VIEWER = {
   name: 'Mom',
   role: 'viewer',
-  watching: 'Rohan',
+  watching: 'Shaurya',
   lastGlucose: 142,
   lastGlucoseTime: '2h ago',
   glucoseTarget: { min: 70, max: 180 },
   currentIOB: 1.4,
   alerts: [
-    { id: 1, type: 'danger', message: "Rohan's glucose is above target: 142 mg/dL", time: '2h ago' },
+    { id: 1, type: 'danger', message: "Shaurya's glucose is above target: 142 mg/dL", time: '2h ago' },
     { id: 2, type: 'warning', message: 'High carb meal detected', time: '1h ago' },
   ],
   glucoseTrend: [88, 95, 110, 142, 138, 125, 118, 142],
@@ -230,7 +230,7 @@ function Sidebar({
         >
           <div style={{ fontSize: 11, color: COLORS.muted, marginBottom: 2 }}>Logged in as</div>
           <div style={{ fontWeight: 700, fontSize: 13, color: COLORS.text }}>
-            {role === 'owner' ? 'Rohan (Owner)' : 'Mom (Viewer)'}
+            {role === 'owner' ? 'Shaurya (Owner)' : 'Mom (Viewer)'}
           </div>
           <div
             style={{
