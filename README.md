@@ -26,6 +26,58 @@
 - JWT utility and auth middleware added
 - Protected route support with `Authorization: Bearer <token>`
 
+### Day 4: Auth UI (frontend)
+- Login/Register/Logout UI added
+- Connected frontend to auth APIs
+- Token persistence in local storage
+- Current-user fetch using `/api/auth/me`
+
+### Day 5: Protected Routes + Role Access
+- Backend route protection with `requireAuth`
+- Role guard support with `requireRole`
+- Owner/viewer access boundaries prepared
+
+### Day 6: Family Roles + Invite Flow
+- Family APIs added:
+  - `POST /api/family/invite`
+  - `POST /api/family/accept/:inviteId`
+  - `GET /api/family/mine`
+  - `DELETE /api/family/member/:memberUserId`
+- Owner-only controls for invite/remove
+
+### Day 7: QA + Postman
+- Postman collection added for auth + family flow
+- End-to-end test order documented (register/login/invite/accept/list/remove)
+
+### Day 8: Glucose API
+- Glucose model ready
+- API scope planned: create/list/filter by date
+
+### Day 9: Glucose UI
+- Glucose dashboard section planned
+- Filters planned: `today`, `7d`, `30d`
+
+### Day 10: Insulin API + UI
+- Insulin model ready
+- API/UI scope planned for manual insulin logging
+
+### Day 11: Food API + Food Log UI
+- Meal and food models ready
+- API/UI scope planned for meal logging + macros
+
+### Day 12: Personal Food Library CRUD
+- Food library model ready
+- CRUD scope planned for reusable dish entries
+
+### Day 13: “Mom’s Kitchen” Tab
+- Quick-pick saved dish workflow planned
+- Family-owner food library pattern defined
+
+### Day 14: QA + API Tests
+- Test target: glucose/insulin/food APIs
+- Stability and validation checks planned
+
+---
 ---
 
 ## Current Tech Stack
