@@ -1,4 +1,8 @@
 import { useState } from 'react';
+import { GlucosePage } from './GlucosePage';
+import { InsulinPage } from './InsulinPage';
+import { MealsPage } from './MealsPage';
+import { MomsKitchen } from './MomsKitchen';
 
 const COLORS = {
   bg: '#F7F8FA',
@@ -558,6 +562,38 @@ export function Dashboard() {
   const [role, setRole] = useState<'owner' | 'viewer'>('owner');
   const [activeNav, setActiveNav] = useState('dashboard');
 
+  function ComingSoon({ title }: { title: string }) {
+    return (
+      <div
+        style={{
+          background: COLORS.card,
+          border: `1px solid ${COLORS.border}`,
+          borderRadius: 16,
+          padding: 24,
+        }}
+      >
+        <h2 style={{ margin: '0 0 8px', color: COLORS.text, fontFamily: 'Georgia, serif' }}>{title}</h2>
+        <p style={{ margin: 0, color: COLORS.muted, fontSize: 14 }}>This section will be implemented in upcoming days.</p>
+      </div>
+    );
+  }
+
+  function renderContent() {
+    if (activeNav === 'dashboard') {
+      return role === 'owner' ? <OwnerDashboard data={MOCK_OWNER} /> : <ViewerDashboard data={MOCK_VIEWER} />;
+    }
+
+    if (activeNav === 'glucose') return <GlucosePage />;
+    if (activeNav === 'insulin') return role === 'owner' ? <InsulinPage /> : <ComingSoon title="Insulin" />;
+    if (activeNav === 'meals') return <MealsPage />;
+    if (activeNav === 'kitchen') return <MomsKitchen />;
+    if (activeNav === 'alerts') return <ComingSoon title="Alerts" />;
+    if (activeNav === 'calculator') return <ComingSoon title="Dose Calculator" />;
+    if (activeNav === 'family') return <ComingSoon title="Family" />;
+
+    return role === 'owner' ? <OwnerDashboard data={MOCK_OWNER} /> : <ViewerDashboard data={MOCK_VIEWER} />;
+  }
+
   return (
     <div style={{ fontFamily: "'DM Sans', sans-serif", background: COLORS.bg, minHeight: '100vh' }}>
       <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
@@ -587,7 +623,7 @@ export function Dashboard() {
           ))}
         </div>
 
-        {role === 'owner' ? <OwnerDashboard data={MOCK_OWNER} /> : <ViewerDashboard data={MOCK_VIEWER} />}
+        {renderContent()}
       </main>
     </div>
   );
