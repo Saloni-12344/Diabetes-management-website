@@ -4,6 +4,7 @@ import express from 'express';
 import mongoose from 'mongoose';
 import { connectDb, isDbConnected } from './config/db.js';
 import { authRoutes } from './routes/authRoutes.js';
+import { familyRoutes } from './routes/familyRoutes.js';
 
 dotenv.config();
 
@@ -21,6 +22,7 @@ app.get('/health', (_req, res) => {
 });
 
 app.use('/api/auth', authRoutes);
+app.use('/api/family', familyRoutes);
 
 const port = Number(process.env.SERVER_PORT || 5000);
 
