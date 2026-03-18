@@ -41,3 +41,50 @@
 git clone https://github.com/Saloni-12344/Diabetes-management-website.git
 cd Diabetes-management-website
 npm install
+```
+
+Create `server/.env`:
+```env
+SERVER_PORT=5001
+MONGO_URI=mongodb://127.0.0.1:27017/diabetes_app
+JWT_SECRET=your_secret_key
+JWT_EXPIRES_IN=7d
+```
+
+Run:
+```bash
+npm run dev:server
+npm run dev:client
+```
+
+- Frontend: `http://localhost:5173`
+- Backend health: `http://localhost:5001/health`
+
+---
+
+## API (Day 3)
+### Register
+`POST /api/auth/register`
+```json
+{
+  "name": "Saloni",
+  "email": "saloni@example.com",
+  "password": "password123",
+  "role": "owner"
+}
+```
+
+### Login
+`POST /api/auth/login`
+```json
+{
+  "email": "saloni@example.com",
+  "password": "password123"
+}
+```
+
+### Current user (Protected)
+`GET /api/auth/me`
+
+Header:
+`Authorization: Bearer <token>`
