@@ -1,11 +1,9 @@
 import type { CSSProperties, FormEvent } from 'react';
 import { useEffect, useState } from 'react';
-
-const TOKEN_KEY = 'diabetes_app_token';
-const API_BASE = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5001';
+import { authFetch } from '../lib/authFetch';
 
 type MealLog = {
-  _id: string;
+  id: string;
   mealName: string;
   grams: number;
   calories: number;
@@ -41,21 +39,6 @@ const inputStyle: CSSProperties = {
   outline: 'none',
   width: '100%',
 };
-
-async function authFetch<T>(path: string, options: RequestInit = {}): Promise<T> {
-  const token = localStorage.getItem(TOKEN_KEY);
-  const res = await fetch(`${API_BASE}${path}`, {
-    ...options,
-    headers: {
-      'Content-Type': 'application/json',
-      ...(token ? { Authorization: `Bearer ${token}` } : {}),
-      ...(options.headers || {}),
-    },
-  });
-  const data = await res.json().catch(() => ({}));
-  if (!res.ok) throw new Error((data as { message?: string }).message || 'Request failed');
-  return data as T;
-}
 
 export function MealsPage() {
   const [filter, setFilter] = useState<Filter>('today');
@@ -132,7 +115,7 @@ export function MealsPage() {
   async function onDelete(id: string) {
     try {
       await authFetch(`/api/meals/${id}`, { method: 'DELETE' });
-      setLogs((prev) => prev.filter((x) => x._id !== id));
+      setLogs((prev) => prev.filter((x) => x.id !== id));
     } catch (err) {
       alert(err instanceof Error ? err.message : 'Delete failed');
     }
@@ -154,7 +137,7 @@ export function MealsPage() {
       <div style={{ background: C.card, borderRadius: 16, padding: 22, border: `1px solid ${C.border}` }}>
         <div style={{ fontWeight: 700, fontSize: 15, color: C.text, marginBottom: 16 }}>+ Log Meal</div>
         <form onSubmit={onAdd}>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 12, marginBottom: 12 }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(140px, 1fr))', gap: 12, marginBottom: 12 }}>
             <div>
               <label style={{ fontSize: 12, color: C.muted, fontWeight: 600, display: 'block', marginBottom: 6 }}>Meal Name</label>
               <input value={mealName} onChange={(e) => setMealName(e.target.value)} required placeholder="e.g. Dal Chawal" style={inputStyle} />
@@ -211,7 +194,7 @@ export function MealsPage() {
 
         <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
           {logs.map((l) => (
-            <div key={l._id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '14px 16px', borderRadius: 12, background: C.bg, border: `1px solid ${C.border}` }}>
+            <div key={l.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '14px 16px', borderRadius: 12, background: C.bg, border: `1px solid ${C.border}` }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
                 <div style={{ width: 44, height: 44, borderRadius: 12, background: C.warnLight, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 20 }}>🍛</div>
                 <div>
@@ -220,7 +203,7 @@ export function MealsPage() {
                   <div style={{ fontSize: 11, color: C.muted }}>{l.isCooked ? 'Cooked' : 'Raw'} · {new Date(l.loggedAt).toLocaleString()}</div>
                 </div>
               </div>
-              <button onClick={() => void onDelete(l._id)} style={{ background: C.dangerLight, color: C.danger, border: 'none', borderRadius: 8, padding: '6px 12px', fontSize: 12, fontWeight: 600, cursor: 'pointer' }}>Delete</button>
+              <button onClick={() => void onDelete(l.id)} style={{ background: C.dangerLight, color: C.danger, border: 'none', borderRadius: 8, padding: '6px 12px', fontSize: 12, fontWeight: 600, cursor: 'pointer' }}>Delete</button>
             </div>
           ))}
         </div>

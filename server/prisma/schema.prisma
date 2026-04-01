@@ -1,0 +1,290 @@
+// ─────────────────────────────────────────────────────────────────────────────
+// GlucoFamily — Prisma schema
+// Database: PostgreSQL
+// ─────────────────────────────────────────────────────────────────────────────
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ── Enums ────────────────────────────────────────────────────────────────────
+
+enum Role {
+  OWNER
+  VIEWER
+}
+
+enum DiabetesType {
+  TYPE1
+  TYPE2
+  GESTATIONAL
+  OTHER
+}
+
+enum InviteStatus {
+  INVITED
+  ACCEPTED
+}
+
+enum GlucoseUnit {
+  MG_DL   // mg/dL
+  MMOL_L  // mmol/L
+}
+
+enum InsulinType {
+  FAST
+  SLOW
+}
+
+enum MealSource {
+  MANUAL
+  AI
+  LIBRARY
+}
+
+enum AlertType {
+  POST_MEAL_WALK
+  HIGH_CARB_LOW_PROTEIN
+  PATTERN
+  CRITICAL_GLUCOSE
+}
+
+enum ReminderType {
+  POST_MEAL_WALK
+  NO_GLUCOSE_LOGGED
+  IOB_EXPIRY
+}
+
+enum ReminderStatus {
+  PENDING
+  SENT
+  CANCELLED
+}
+
+// ── User ─────────────────────────────────────────────────────────────────────
+
+model User {
+  id               String       @id @default(cuid())
+  name             String
+  email            String       @unique
+  passwordHash     String
+  role             Role         @default(OWNER)
+  diabetesType     DiabetesType @default(TYPE1)
+  targetGlucoseMin Float        @default(70)
+  targetGlucoseMax Float        @default(180)
+
+  // Password reset (no email service yet — code returned in API)
+  resetToken       String?
+  resetTokenExpiry DateTime?
+
+  // Doctor / dose-calculator settings
+  drIcr            Float        @default(10)
+  drIsf            Float        @default(50)
+  drTargetGlucose  Float        @default(110)
+  drMaxDosePerMeal Float        @default(15)
+
+  createdAt        DateTime     @default(now())
+  updatedAt        DateTime     @updatedAt
+
+  // Relations
+  ownedFamily      Family?      @relation("FamilyOwner")
+  membership       FamilyMember?
+
+  glucoseLogs      GlucoseLog[]
+  insulinLogs      InsulinLog[]
+  mealLogs         MealLog[]
+  advisoryAudits   AdvisoryAudit[]
+  createdFoodItems FoodLibrary[] @relation("CreatedBy")
+  alerts           Alert[]
+  reminders        Reminder[]
+}
+
+// ── Family ───────────────────────────────────────────────────────────────────
+// One Family per owner. The owner's userId IS the family's identity.
+// All shared resources (food library) are scoped to the family.
+
+model Family {
+  id        String         @id @default(cuid())
+  ownerId   String         @unique
+  owner     User           @relation("FamilyOwner", fields: [ownerId], references: [id])
+  createdAt DateTime       @default(now())
+
+  members        FamilyMember[]
+  foodItems      FoodLibrary[]
+  pendingInvites PendingInvite[]
+}
+
+// ── FamilyMember ─────────────────────────────────────────────────────────────
+// Links a viewer User to an owner's Family.
+
+model FamilyMember {
+  id        String       @id @default(cuid())
+  familyId  String
+  family    Family       @relation(fields: [familyId], references: [id])
+  userId    String       @unique   // each user belongs to at most one family
+  user      User         @relation(fields: [userId], references: [id])
+  role      Role         @default(VIEWER)
+  status    InviteStatus @default(INVITED)
+  createdAt DateTime     @default(now())
+
+  @@unique([familyId, userId])
+}
+
+// ── GlucoseLog ───────────────────────────────────────────────────────────────
+
+model GlucoseLog {
+  id        String      @id @default(cuid())
+  userId    String
+  user      User        @relation(fields: [userId], references: [id])
+  value     Float
+  unit      GlucoseUnit @default(MG_DL)
+  loggedAt  DateTime    @default(now())
+  notes     String?
+  source    String      @default("manual")
+  createdAt DateTime    @default(now())
+
+  @@index([userId, loggedAt(sort: Desc)])
+}
+
+// ── InsulinLog ───────────────────────────────────────────────────────────────
+
+model InsulinLog {
+  id             String      @id @default(cuid())
+  userId         String
+  user           User        @relation(fields: [userId], references: [id])
+  dose           Float
+  insulinType    InsulinType
+  loggedAt       DateTime    @default(now())
+  notes          String?
+  source         String      @default("manual")
+  idempotencyKey String?     @unique
+  createdAt      DateTime    @default(now())
+
+  @@index([userId, loggedAt(sort: Desc)])
+}
+
+// ── MealLog ──────────────────────────────────────────────────────────────────
+// Nutrition values are SNAPSHOTTED at log time.
+// foodLibraryId is kept as a soft reference only — never joined for nutrition.
+
+model MealLog {
+  id            String     @id @default(cuid())
+  userId        String
+  user          User       @relation(fields: [userId], references: [id])
+  mealName      String
+  // ── Nutrition snapshot (copied from library or entered manually) ──
+  grams         Float
+  calories      Float
+  carbs         Float
+  protein       Float
+  fat           Float
+  // ─────────────────────────────────────────────────────────────────
+  isCooked      Boolean    @default(true)
+  source        MealSource @default(MANUAL)
+  loggedAt      DateTime   @default(now())
+  notes         String?
+  foodLibraryId String?    // soft ref — do NOT re-read nutrition from here
+  foodItem      FoodLibrary? @relation(fields: [foodLibraryId], references: [id])
+  createdAt     DateTime   @default(now())
+
+  @@index([userId, loggedAt(sort: Desc)])
+}
+
+// ── FoodLibrary ──────────────────────────────────────────────────────────────
+// Scoped to a Family, not an individual user.
+// Editing a dish here does NOT change past MealLog records.
+
+model FoodLibrary {
+  id              String    @id @default(cuid())
+  familyId        String
+  family          Family    @relation(fields: [familyId], references: [id])
+  createdByUserId String
+  createdBy       User      @relation("CreatedBy", fields: [createdByUserId], references: [id])
+  dishName        String
+  gramsPerServing Float
+  calories        Float
+  carbs           Float
+  protein         Float
+  fat             Float
+  isCooked        Boolean   @default(true)
+  photoUrl        String?
+  isConfirmed     Boolean   @default(true)
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  mealLogs        MealLog[]
+
+  @@unique([familyId, dishName])
+}
+
+// ── Alert ────────────────────────────────────────────────────────────────────
+
+model Alert {
+  id           String    @id @default(cuid())
+  userId       String
+  user         User      @relation(fields: [userId], references: [id])
+  type         AlertType
+  message      String
+  relatedLogId String?
+  isRead       Boolean   @default(false)
+  triggeredAt  DateTime  @default(now())
+  createdAt    DateTime  @default(now())
+
+  @@index([userId, triggeredAt(sort: Desc), isRead])
+}
+
+// ── Reminder ─────────────────────────────────────────────────────────────────
+
+model Reminder {
+  id           String         @id @default(cuid())
+  userId       String
+  user         User           @relation(fields: [userId], references: [id])
+  type         ReminderType
+  scheduledAt  DateTime
+  status       ReminderStatus @default(PENDING)
+  relatedLogId String?
+  jobId        String?        @unique
+  createdAt    DateTime       @default(now())
+
+  @@index([userId, status, scheduledAt])
+}
+
+// ── PendingInvite ─────────────────────────────────────────────────────────────
+// Stores invites sent to emails that haven't registered yet.
+// On registration, auth checks this table and auto-links the new user.
+
+model PendingInvite {
+  id        String   @id @default(cuid())
+  email     String
+  familyId  String
+  family    Family   @relation(fields: [familyId], references: [id])
+  createdAt DateTime @default(now())
+
+  @@unique([email, familyId])
+  @@index([email])
+}
+
+// ── AdvisoryAudit ────────────────────────────────────────────────────────────
+
+model AdvisoryAudit {
+  id                  String   @id @default(cuid())
+  userId              String
+  user                User     @relation(fields: [userId], references: [id])
+  currentGlucose      Float
+  mealCarbs           Float
+  icr                 Float
+  isf                 Float
+  targetGlucose       Float
+  iob                 Float
+  recommendedDose     Float
+  disclaimerConfirmed Boolean
+  confirmedByUser     Boolean
+  createdAt           DateTime @default(now())
+
+  @@index([userId, createdAt(sort: Desc)])
+}

@@ -1,0 +1,1 @@
+{"root":["./src/app.tsx","./src/main.tsx","./src/vite-env.d.ts","./src/lib/authfetch.ts","./src/pages/alertspage.tsx","./src/pages/dashboard.tsx","./src/pages/familypage.tsx","./src/pages/glucosepage.tsx","./src/pages/historypage.tsx","./src/pages/insulinpage.tsx","./src/pages/loginpage.tsx","./src/pages/mealspage.tsx","./src/pages/momskitchen.tsx"],"version":"5.9.3"}

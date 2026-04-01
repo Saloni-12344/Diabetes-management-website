@@ -1,142 +1,213 @@
-## Progress (Day 1–3)
+# GlucoFamily
 
-### Day 1: Project Foundation
-- Monorepo setup with 3 apps:
-  - `client` (React + TypeScript)
-  - `server` (Node.js + Express + TypeScript)
-  - `worker` (TypeScript starter for background jobs)
-- Workspace scripts added at root (`dev:client`, `dev:server`, `dev:worker`)
-- Basic lint/format config added (`ESLint`, `Prettier`, `.editorconfig`)
+A family-shared diabetes management app. An **Owner** logs glucose, insulin, and meals; invited **Viewers** (family members) monitor the owner's data in real time.
 
-### Day 2: Database Setup
-- MongoDB connection integrated with Mongoose
-- DB helper created: `server/src/config/db.ts`
-- Base models created:
-  - `User` model
-  - `FamilyMember` model (owner/viewer relationship + unique index)
-- Health route improved:
-  - `GET /health` returns server + DB status
+## Tech Stack
 
-### Day 3: Auth API (JWT + bcrypt)
-- Auth dependencies added (`bcryptjs`, `jsonwebtoken`)
-- Auth endpoints implemented:
-  - `POST /api/auth/register`
-  - `POST /api/auth/login`
-  - `GET /api/auth/me` (protected)
-- JWT utility and auth middleware added
-- Protected route support with `Authorization: Bearer <token>`
-
-### Day 4: Auth UI (frontend)
-- Login/Register/Logout UI added
-- Connected frontend to auth APIs
-- Token persistence in local storage
-- Current-user fetch using `/api/auth/me`
-
-### Day 5: Protected Routes + Role Access
-- Backend route protection with `requireAuth`
-- Role guard support with `requireRole`
-- Owner/viewer access boundaries prepared
-
-### Day 6: Family Roles + Invite Flow
-- Family APIs added:
-  - `POST /api/family/invite`
-  - `POST /api/family/accept/:inviteId`
-  - `GET /api/family/mine`
-  - `DELETE /api/family/member/:memberUserId`
-- Owner-only controls for invite/remove
-
-### Day 7: QA + Postman
-- Postman collection added for auth + family flow
-- End-to-end test order documented (register/login/invite/accept/list/remove)
-
-### Day 8: Glucose API
-- Glucose model ready
-- API scope planned: create/list/filter by date
-
-### Day 9: Glucose UI
-- Glucose dashboard section planned
-- Filters planned: `today`, `7d`, `30d`
-
-### Day 10: Insulin API + UI
-- Insulin model ready
-- API/UI scope planned for manual insulin logging
-
-### Day 11: Food API + Food Log UI
-- Meal and food models ready
-- API/UI scope planned for meal logging + macros
-
-### Day 12: Personal Food Library CRUD
-- Food library model ready
-- CRUD scope planned for reusable dish entries
-
-### Day 13: “Mom’s Kitchen” Tab
-- Quick-pick saved dish workflow planned
-- Family-owner food library pattern defined
-
-### Day 14: QA + API Tests
-- Test target: glucose/insulin/food APIs
-- Stability and validation checks planned
-
----
----
-
-## Current Tech Stack
-- Frontend: React, TypeScript, Vite
-- Backend: Node.js, Express, TypeScript
-- Database: MongoDB + Mongoose
-- Auth: JWT + bcryptjs
+| Layer | Technology |
+|---|---|
+| Frontend | React 18 · TypeScript · Vite |
+| Backend | Node.js · Express · TypeScript |
+| Database | PostgreSQL (via Homebrew) · Prisma ORM |
+| Auth | JWT · bcryptjs |
+| Real-time | Socket.IO |
+| Charts | Recharts |
 
 ---
 
-## Local Setup (Current)
+## Prerequisites
+
+- **Node.js** ≥ 18
+- **PostgreSQL 14** — installed via Homebrew
+  ```bash
+  brew install postgresql@14
+  brew services start postgresql@14
+  ```
+
+---
+
+## Local Setup
+
 ```bash
 git clone https://github.com/Saloni-12344/Diabetes-management-website.git
 cd Diabetes-management-website
-npm install
+npm install          # installs root + all workspaces
 ```
+
+### 1 — Create the database
+
+```bash
+psql -U $(whoami) postgres -c "CREATE DATABASE glucofamily;"
+```
+
+### 2 — Configure the server
 
 Create `server/.env`:
+
 ```env
 SERVER_PORT=5001
-MONGO_URI=mongodb://127.0.0.1:27017/diabetes_app
-JWT_SECRET=your_secret_key
+DATABASE_URL="postgresql://<your-mac-username>@localhost:5432/glucofamily"
+JWT_SECRET=change_me_in_production
 JWT_EXPIRES_IN=7d
+ALLOWED_ORIGINS=http://localhost:5173
+
+# Optional — Gemini photo analysis for Mom's Kitchen
+# GEMINI_API_KEY=your_key_from_aistudio.google.com
+
+# Optional — Resend for real invite emails
+# RESEND_API_KEY=your_key_from_resend.com
 ```
 
-Run:
+> Replace `<your-mac-username>` with the output of `whoami`.
+
+### 3 — Push the database schema
+
 ```bash
+cd server
+npx prisma db push
+cd ..
+```
+
+### 4 — Start the servers
+
+In two separate terminals:
+
+```bash
+# Terminal 1 — backend (hot-reload)
 npm run dev:server
+
+# Terminal 2 — frontend (hot-reload)
 npm run dev:client
 ```
 
-- Frontend: `http://localhost:5173`
-- Backend health: `http://localhost:5001/health`
+- Frontend: http://localhost:5173
+- Backend health: http://localhost:5001/health
 
 ---
 
-## API (Day 3)
-### Register
-`POST /api/auth/register`
-```json
-{
-  "name": "Saloni",
-  "email": "saloni@example.com",
-  "password": "password123",
-  "role": "owner"
-}
+## Project Structure
+
+```
+diabetes-app/
+├── client/          # React + Vite frontend
+│   └── src/
+│       ├── pages/   # Dashboard, Glucose, Insulin, Meals, MomsKitchen, Family, Alerts, History
+│       └── lib/     # authFetch utility
+├── server/          # Express + Prisma backend
+│   └── src/
+│       ├── controllers/
+│       ├── routes/
+│       ├── middleware/
+│       ├── lib/     # Prisma client, Socket.IO
+│       └── utils/
+└── package.json     # Root workspace config
 ```
 
-### Login
-`POST /api/auth/login`
-```json
-{
-  "email": "saloni@example.com",
-  "password": "password123"
-}
+---
+
+## API Reference
+
+### Auth
+
+| Method | Endpoint | Description |
+|---|---|---|
+| POST | `/api/auth/register` | Register (role: `owner` \| `viewer`) |
+| POST | `/api/auth/login` | Login → returns JWT |
+| GET | `/api/auth/me` | Current user (protected) |
+| POST | `/api/auth/forgot-password` | Generate reset code |
+| POST | `/api/auth/reset-password` | Reset with code |
+
+### Health data (all protected, owner-scoped)
+
+| Method | Endpoint | Description |
+|---|---|---|
+| POST | `/api/glucose` | Log a glucose reading |
+| GET | `/api/glucose?filter=7d` | List readings (filters: `today`, `7d`, `30d`) |
+| DELETE | `/api/glucose/:id` | Delete a reading |
+| POST | `/api/insulin` | Log an insulin dose |
+| GET | `/api/insulin?filter=today` | List doses |
+| DELETE | `/api/insulin/:id` | Delete a dose |
+| POST | `/api/meals` | Log a meal |
+| GET | `/api/meals?filter=today` | List meal logs |
+| DELETE | `/api/meals/:id` | Delete a meal log |
+
+### Food Library (Mom's Kitchen)
+
+| Method | Endpoint | Description |
+|---|---|---|
+| GET | `/api/food-library` | List family's saved dishes |
+| POST | `/api/food-library` | Save a new dish |
+| PUT | `/api/food-library/:id` | Update a dish |
+| DELETE | `/api/food-library/:id` | Remove a dish |
+
+### Family
+
+| Method | Endpoint | Description |
+|---|---|---|
+| POST | `/api/family/invite` | Invite by email (creates PendingInvite if not yet registered) |
+| POST | `/api/family/accept/:inviteId` | Accept an invite |
+| GET | `/api/family/mine` | List members / my membership |
+| DELETE | `/api/family/member/:memberUserId` | Remove a member (owner only) |
+
+### Viewer
+
+| Method | Endpoint | Description |
+|---|---|---|
+| GET | `/api/viewer/summary` | Owner's live health summary (viewer only) |
+
+### Alerts & History
+
+| Method | Endpoint | Description |
+|---|---|---|
+| GET | `/api/alerts` | List alerts |
+| GET | `/api/alerts/unread-count` | Unread badge count |
+| PATCH | `/api/alerts/:id/read` | Mark one read |
+| POST | `/api/alerts/mark-all-read` | Mark all read |
+| GET | `/api/history` | Full log history |
+
+---
+
+## Family Invite Flow
+
+1. Owner enters a viewer's email in the **Family** tab and clicks **Send Invite**.
+2. If the viewer already has an account, a `FamilyMember` record is created immediately.
+3. If not, a `PendingInvite` is stored. When the viewer registers with that email address, they are automatically linked to the family.
+4. The viewer accepts the invite from their own Family tab.
+5. Once accepted, the Viewer Dashboard shows the owner's live data.
+
+> **Note:** No email is sent automatically yet. Share the invite by messaging the viewer their email address and asking them to register.
+
+---
+
+## Available Scripts
+
+```bash
+# From the repo root:
+npm run dev:client        # Start Vite dev server
+npm run dev:server        # Start Express dev server (tsx watch)
+npm run build             # Build both client and server
+
+# From server/:
+npm run build             # tsc — must exit 0 before deploying
+npm run lint              # ESLint 9 flat config
+npx prisma studio         # Visual DB browser
+npx prisma db push        # Sync schema → DB (dev)
+
+# From client/:
+npm run build             # Vite production build
+npm run lint              # ESLint 9 flat config
+npm run preview           # Preview production build locally
 ```
 
-### Current user (Protected)
-`GET /api/auth/me`
+---
 
-Header:
-`Authorization: Bearer <token>`
+## Features
+
+- **Glucose logging** — manual entry with unit support (mg/dL / mmol/L), 7-day trend chart
+- **Insulin logging** — fast/slow-acting, idempotency-key deduplication
+- **Meal logging** — carbs, protein, fat, calories; daily macro pie chart
+- **Mom's Kitchen** — family food library for quick meal logging from saved dishes
+- **Real-time alerts** — Socket.IO pushes critical glucose alerts to all family connections
+- **Viewer Dashboard** — live owner health summary (last glucose, trend, last meal, last insulin, today's counts)
+- **Role-based access** — Owners manage data; Viewers read-only
+- **Pending invite system** — Invite unregistered users; they auto-link on registration

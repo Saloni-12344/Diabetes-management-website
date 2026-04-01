@@ -1,11 +1,9 @@
 import type { CSSProperties, FormEvent } from 'react';
 import { useEffect, useState } from 'react';
-
-const TOKEN_KEY = 'diabetes_app_token';
-const API_BASE = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5001';
+import { authFetch } from '../lib/authFetch';
 
 type GlucoseLog = {
-  _id: string;
+  id: string;
   value: number;
   unit: 'mg/dL' | 'mmol/L';
   loggedAt: string;
@@ -34,21 +32,6 @@ const inputStyle: CSSProperties = {
   fontSize: 14,
   outline: 'none',
 };
-
-async function authFetch<T>(path: string, options: RequestInit = {}): Promise<T> {
-  const token = localStorage.getItem(TOKEN_KEY);
-  const res = await fetch(`${API_BASE}${path}`, {
-    ...options,
-    headers: {
-      'Content-Type': 'application/json',
-      ...(token ? { Authorization: `Bearer ${token}` } : {}),
-      ...(options.headers || {}),
-    },
-  });
-  const data = await res.json().catch(() => ({}));
-  if (!res.ok) throw new Error((data as { message?: string }).message || 'Request failed');
-  return data as T;
-}
 
 function statusColor(v: number) {
   if (v > 180) return C.danger;
@@ -113,7 +96,7 @@ export function GlucosePage() {
   async function onDelete(id: string) {
     try {
       await authFetch(`/api/glucose/${id}`, { method: 'DELETE' });
-      setLogs((prev) => prev.filter((x) => x._id !== id));
+      setLogs((prev) => prev.filter((x) => x.id !== id));
     } catch (err) {
       alert(err instanceof Error ? err.message : 'Delete failed');
     }
@@ -129,15 +112,15 @@ export function GlucosePage() {
       <div style={{ background: C.card, borderRadius: 16, padding: 22, border: `1px solid ${C.border}` }}>
         <div style={{ fontWeight: 700, fontSize: 15, color: C.text, marginBottom: 16 }}>+ New Reading</div>
         <form onSubmit={onAdd} style={{ display: 'flex', gap: 12, alignItems: 'flex-end', flexWrap: 'wrap' }}>
-          <div>
+          <div style={{ flex: '1 1 130px', minWidth: 110 }}>
             <label style={{ fontSize: 12, color: C.muted, fontWeight: 600, display: 'block', marginBottom: 6 }}>Glucose (mg/dL)</label>
-            <input type="number" value={value} onChange={(e) => setValue(e.target.value)} placeholder="e.g. 120" required min={0} style={{ ...inputStyle, width: 140 }} />
+            <input type="number" value={value} onChange={(e) => setValue(e.target.value)} placeholder="e.g. 120" required min={0} style={{ ...inputStyle, width: '100%', boxSizing: 'border-box' }} />
           </div>
-          <div>
+          <div style={{ flex: '2 1 180px', minWidth: 140 }}>
             <label style={{ fontSize: 12, color: C.muted, fontWeight: 600, display: 'block', marginBottom: 6 }}>Notes (optional)</label>
-            <input value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="e.g. before meal" style={{ ...inputStyle, width: 220 }} />
+            <input value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="e.g. before meal" style={{ ...inputStyle, width: '100%', boxSizing: 'border-box' }} />
           </div>
-          <button type="submit" disabled={submitting} style={{ background: C.primary, color: '#fff', border: 'none', borderRadius: 10, padding: '10px 22px', fontWeight: 700, fontSize: 14, cursor: 'pointer' }}>
+          <button type="submit" disabled={submitting} style={{ background: C.primary, color: '#fff', border: 'none', borderRadius: 10, padding: '10px 22px', fontWeight: 700, fontSize: 14, cursor: 'pointer', flexShrink: 0 }}>
             {submitting ? 'Saving...' : 'Log'}
           </button>
         </form>
@@ -161,7 +144,7 @@ export function GlucosePage() {
 
         <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
           {logs.map((l) => (
-            <div key={l._id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '14px 16px', borderRadius: 12, background: C.bg, border: `1px solid ${C.border}` }}>
+            <div key={l.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '14px 16px', borderRadius: 12, background: C.bg, border: `1px solid ${C.border}` }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
                 <div style={{ width: 44, height: 44, borderRadius: 12, background: `${statusColor(l.value)}22`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 20 }}>🩸</div>
                 <div>
@@ -172,7 +155,7 @@ export function GlucosePage() {
                   {l.notes && <div style={{ fontSize: 12, color: C.muted, fontStyle: 'italic' }}>{l.notes}</div>}
                 </div>
               </div>
-              <button onClick={() => void onDelete(l._id)} style={{ background: C.dangerLight, color: C.danger, border: 'none', borderRadius: 8, padding: '6px 12px', fontSize: 12, fontWeight: 600, cursor: 'pointer' }}>Delete</button>
+              <button onClick={() => void onDelete(l.id)} style={{ background: C.dangerLight, color: C.danger, border: 'none', borderRadius: 8, padding: '6px 12px', fontSize: 12, fontWeight: 600, cursor: 'pointer' }}>Delete</button>
             </div>
           ))}
         </div>
