@@ -2,8 +2,8 @@ import type { CSSProperties, FormEvent } from 'react';
 import { useEffect, useRef, useState } from 'react';
 import { authFetch } from '../lib/authFetch';
 
-// Set to true once you add GEMINI_API_KEY to server/.env and run npm install in server/
-const GEMINI_ENABLED = false;
+// Gemini photo analysis is active — requires GEMINI_API_KEY in server/.env
+const GEMINI_ENABLED = true;
 
 type FoodItem = {
   id: string;

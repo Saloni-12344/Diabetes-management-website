@@ -1,5 +1,6 @@
 import type { Request, Response } from 'express';
 import { prisma } from '../lib/prisma.js';
+import { sendInviteEmail } from '../lib/email.js';
 
 export async function inviteFamilyMember(req: Request, res: Response): Promise<void> {
   try {
@@ -38,6 +39,14 @@ export async function inviteFamilyMember(req: Request, res: Response): Promise<v
         update: { familyId: family.id, role: 'VIEWER', status: 'INVITED' },
         create: { familyId: family.id, userId: memberUser.id, role: 'VIEWER', status: 'INVITED' },
       });
+
+      // Send email (non-blocking — invite is saved regardless of email outcome)
+      sendInviteEmail({
+        toEmail: cleanEmail,
+        ownerName: ownerUser?.name ?? 'Someone',
+        isExistingUser: true,
+      }).catch((err) => console.error('Email send failed (existing user):', err));
+
       res.status(200).json({
         message: 'Invite sent',
         invite: {
@@ -56,6 +65,14 @@ export async function inviteFamilyMember(req: Request, res: Response): Promise<v
         update: { createdAt: new Date() },
         create: { email: cleanEmail, familyId: family.id },
       });
+
+      // Send email (non-blocking — invite is saved regardless of email outcome)
+      sendInviteEmail({
+        toEmail: cleanEmail,
+        ownerName: ownerUser?.name ?? 'Someone',
+        isExistingUser: false,
+      }).catch((err) => console.error('Email send failed (pending invite):', err));
+
       res.status(200).json({
         message: `Invite saved. When ${cleanEmail} registers, they will be automatically linked to your family.`,
         invite: {
