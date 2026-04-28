@@ -2,7 +2,11 @@
   "name": "diabetes-app-monorepo",
   "private": true,
   "version": "0.1.0",
-  "workspaces": ["client", "server", "worker"],
+  "workspaces": [
+    "client",
+    "server",
+    "worker"
+  ],
   "scripts": {
     "dev:client": "npm run dev -w client",
     "dev:server": "npm run dev -w server",
@@ -13,5 +17,8 @@
   },
   "devDependencies": {
     "prettier": "^3.3.3"
+  },
+  "dependencies": {
+    "@google/generative-ai": "^0.24.1"
   }
 }
