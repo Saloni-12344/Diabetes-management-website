@@ -1,6 +1,6 @@
 import { Resend } from 'resend';
 
-const resend = new Resend(process.env.RESEND_API_KEY);
+const resend = new Resend(process.env.RESEND_API_KEY ?? 'placeholder');
 
 // During development Resend lets you send from onboarding@resend.dev
 // to any address without domain verification.
